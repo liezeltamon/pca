@@ -1,0 +1,18 @@
+/* Add custom CSS styles here */
+
+/* Set the font family */
+body {
+  font-family: Arial, sans-serif;
+}
+
+.code_format {
+  background-color: #f7f0f0;
+  border: 3px black;
+  font-size: 20px;
+}
+
+.output_format {
+  background-color: white;
+  border: 3px white;
+  font-size: 16px;
+}
