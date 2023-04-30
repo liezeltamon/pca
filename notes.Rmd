@@ -1,0 +1,312 @@
+---
+title: "Performing Principal Component Analysis in R"
+author: "Liezel Tamon"
+date: "2023-04-28"
+output:
+  slidy_presentation:
+    incremental: yes
+    widescreen: yes
+    smaller: yes
+  beamer_presentation:
+    incremental: yes
+---
+
+```{css, echo=FALSE}
+.code_format {
+  background-color: gray90;
+  border: 3px black;
+  font-weight: bold;
+}
+```
+
+```{css, echo=FALSE}
+.output_format {
+  background-color: white;
+  border: 3px white;
+  font-weight: bold;
+}
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, collapse = FALSE, class.source="code_format", class.output="output_format")
+```
+
+################################################################################
+
+<!-- ## Why we may need to do PCA? -->
+
+<!-- * Real-world systems are complex that we often have to deal with data having many  -->
+<!-- dimensions (i.e. many variables or features) to investigate them.  -->
+
+<!-- * For example, a neuroscientist interested in characterising the cells comprising a  -->
+<!-- section of a human brain to understand its function, may have to deal with data  -->
+<!-- containing expression values of about 20,000 genes from thousands of cells. -->
+
+<!-- <!-- Show illustration of data (like in biostatsquid video) --> -->
+
+<!-- * When working with 1 to 3 genes, one can begin investigating the patterns in the data -->
+<!-- simply by visualising them. From the plot, we could see which cells are more similar -->
+<!-- with each other and we could already hypothesise that they may belong to the same or  -->
+<!-- related cell type. However, this is not feasible when working with more than 3 dimensions  -->
+<!-- or genes.  -->
+
+<!-- <!-- Show 3D plot --> -->
+
+<!-- * One could reduce the dimension of the data by selecting few genes to investigate but this -->
+<!-- already means losing information and may not be a good strategy when we do not have much  -->
+<!-- prior knowledge about the data.  -->
+
+<!-- ## What is PCA? -->
+
+<!-- * PCA is one technique for reducing the dimensionality of a data without the need to  -->
+<!-- leave out any features. Instead, it combines the original features to derive NEW features,  -->
+<!-- the principal components (PC). -->
+
+<!-- * PCA reduces the dimensionality by trying to capture the maximum amount of information or -->
+<!-- variation between data points (cells) in the least number of principal components. Therefore, -->
+<!-- the principal components are ordered in terms of importance or the proportion  -->
+<!-- of variation in the data it can capture. The first principal component (PC1) explains the most  -->
+<!-- variation, followed by the second (PC2), third (PC3), and so on.  -->
+
+<!-- * In conclusion, using PCA, we can transform the high-dimensional data into a lower-dimension  -->
+<!-- representation in terms of fewer principal components, which capture most of the  -->
+<!-- underlying information and are derived by combining the original features. In the PCA plot,  -->
+<!-- we could already see groups of cells corresponding to cell types present in the brain section. -->
+
+<!-- <!-- Show original data being transformed to 2D PCA plot --> -->
+
+<!-- ## Performing PCA in R {.build} -->
+
+<!-- <!-- We will demonstrate how to apply PCA in R on the above sample single cell expression data to --> -->
+<!-- <!-- reveal clustering of subsets of cells, which may reveal cell types present in the brain  --> -->
+<!-- <!-- section. We will then determine the important genes that best differentiate those clusters --> -->
+<!-- <!-- from each other.  --> -->
+
+<!-- We will demonstrate how to apply PCA in R on the above sample single cell expression data to -->
+<!-- reveal relationships between the brain cells and identify the key genes that define those relationships.  -->
+
+<!-- <!-- Statement on not worrying about the details of the data --> -->
+<!-- <!-- Statement on using R base also to focus on theory and basics --> -->
+
+<!-- * Apply PCA using the R base function **prcomp()** -->
+
+<!-- * Examine variation captured by each principal components to decide how many  -->
+<!-- components to use for the lower-dimension PCA plot -->
+
+<!-- * Make and interpret the PCA plot to describe the patterns in the data -->
+
+<!-- * Examine the contribution of the original genes to the most important principal components -->
+<!-- to determine which of the original genes are most influential on the patterns we see and how  -->
+<!-- they are correlated with each other -->
+
+<!-- --- -->
+
+## 1. Apply PCA function {.build}
+
+```{r generate dummy dataset, echo=FALSE}
+
+# Generate empty data table
+
+data.tbl <- matrix(nrow=12, ncol=5)
+
+row.len <- nrow(data.tbl)
+col.len <- ncol(data.tbl)
+
+colnames(data.tbl) <- paste("Gene", 1:ncol(data.tbl), sep="")
+rownames(data.tbl) <- paste("Cell", 1:nrow(data.tbl), sep="")
+
+# Populate each row with fake data
+
+for (col in 1:col.len) {
+  
+  clust1 <- rpois(5, lambda=sample(x=10:1000, size=1))
+  clust2 <- rpois(5, lambda=sample(x=10:1000, size=1))
+  clust3 <- rpois(2, lambda=sample(x=10:1000, size=1))
+
+  data.tbl[,col] <- c(clust1, clust2, clust3)
+  
+}
+
+data.tbl <- cbind(data.tbl, Gene6=rpois(12, lambda=sample(x=10:12, size=1)))
+#
+
+write.csv(data.tbl, file=paste0("./data/data.csv"), row.names=TRUE)
+
+```
+
+## a. Load dataset
+
+First, we will load the dataset stored as a CSV file. It contains expression counts of 6 genes (feature columns) from 12 single cells (rows). 
+
+- 
+
+```{r load str dataset}
+
+# Load the data stored as a CSV file
+data.tbl <- read.csv(file=paste0("./data/data.csv"),  # Path of the file
+                     row.names=1                      # Specify first column to be row names
+                     )
+
+# View structure of data
+str(data.tbl)
+
+```
+
+---
+
+#### b. Check dataset
+
+```{r head dataset}
+
+# Confirm that observations (cells) are rows, features (genes) are columns
+head(data.tbl)
+
+```
+```{r missing values}
+
+# Check for missing values
+any(is.na(data.tbl))
+
+```
+
+```{r non-numeric values}
+
+# Check that all values are numeric
+all(sapply(data.tbl, is.numeric))
+
+```
+
+There are several functions that we can use to do PCA. Here, we will use the R base function **prcomp()**. Note that this function expects that the columns are the features, which are the genes in our case. 
+
+---
+
+#### c. prcomp()
+
+```{r prcomp}
+
+# Apply PCA to data using prcomp()
+pca.out <- prcomp(x=data.tbl, center=TRUE, scale=TRUE)  
+
+```
+
+The function returns a list object containing the following:
+
+```{r pca output}
+
+names(pca.out)
+
+```
+We will learn them in detail as we go through the process.
+
+### 3. PC variation
+
+The "**x**" is a matrix containing the principal components (PC). In theory, the number of PC that can be returned is equal to the number of features in the original data. But because the goal
+of PCA is to compress the information in the least number of features, we would need to choose the least number of PCs that captures most of the variation and that we can use to make a PCA plot. 
+
+The "**sdev**" is a named vector containing the standard deviations for each principal component. We will square this values to get the variation accounted for by each principal component.
+
+```{r var}
+
+# Calculate variation explained by each PC
+
+pc.var <- (pca.out$sdev)^2
+names(pc.var) <- paste("PC", 1:length(pc.var), sep="")
+pc.var
+
+```
+To determine which components accounts for most of the variation, it would be more informative to convert the absolute variation values to a percentage relative to the sum of the variations. 
+
+```{r percent var}
+
+pc.var.sum <- sum(pc.var)
+pc.var.perc <- pc.var / pc.var.sum * 100
+pc.var.perc
+
+# summary(pca.out)
+
+```
+
+Then, we visualise the percentages as a barplot using the **barplot()**. This plot is usually called a **scree plot**.
+
+```{r scree plot, dpi=300}
+
+#barplot(pc.var.perc, main="Scree plot", xlab="Principal Component", ylab="Percentage variation")
+
+plot(pc.var.perc, type="b", main="Scree plot", xlab="Principal Component", ylab="Percentage variation")
+
+```
+As expected, the principal components are ordered in decreasing order of variation accounted for such that the first one, PC1 explains the most variation, and we see it here. With this plot, we could conclude that it would be best to use only PC1 and PC2 for the PCA plot, which in total already accounts for ~99.7\% of the variation in the data. 
+
+### 4. Make PCA plot
+
+We generate the PCA plot, which is the lower-dimension representation of the original data, using two new features, PC1 and PC2. When interpreting the clustering of cells we see, we should account for the variation explained by the PC used, so we can append the percentages at the axis labels.
+
+```{r pca plot, dpi=300}
+
+# Base R
+
+{
+  pc.var.perc.round <- round(pc.var.perc, digits=2)
+  
+  plot(x=pca.out$x[,"PC1"], y=pca.out$x[,"PC2"],
+       main="PCA plot",
+       xlab=paste("PC1", pc.var.perc.round[["PC1"]], "%", sep=" "),
+       ylab=paste("PC2", pc.var.perc.round[["PC2"]], "%", sep=" ")
+       )
+  text(x=pca.out$x[,"PC1"], y=pca.out$x[,"PC2"], 
+       labels=rownames(pca.out$x), cex=0.5, pos=1)
+}
+
+```
+
+### 5. Loading scores
+
+The "**rotation**" is a matrix containing the loadings of each of the original features per principal component. It can be interpreted as the weights or the contribution of each original feature to each principal component. 
+
+The absolute magnitude of the loading of a gene corresponds to the magnitude of its contribution to the principal component. So to determine the genes with most influence on the pattern above, we
+can focus on the loadings for PC1, accounting for the most variation, sort the genes
+based on decreasing absolute loading value, then identify top genes with the highest absolute loading i.e. highest contribution or influence to the pattern in the data. 
+
+```{r sort genes}
+
+{
+  pc1.loads <- pca.out$rotation[,"PC1"]
+  pc1.loads.abs <- abs(pca.out$rotation[,"PC1"])
+  pc1.loads.abs.sort <- sort(pc1.loads.abs, decreasing=TRUE)
+  pc1.loads.abs.sort
+  highload.genes <- names(pc1.loads.abs.sort)
+  highload.genes
+}
+```
+
+```{r loadings }
+
+{
+  pc1.loads[highload.genes]
+}
+```
+
+Gene 6 has very low absolute loading which means that it barely contributes to PC1 compared with the others and could be discarded from subsequent analyses. Selecting certain number of features with the highest loading is especially relevant when working with several features. 
+
+
+We can then interpret the sign of the loading, which tells us whether the gene is positively (positive loading) or negative correlated with the principal component. So genes with large positive loadings define cells at the righthand side of the PC1 axis while genes with large negative loadings define cells at the lefthand side of PC1 axis. Also,
+because genes with the same signs behave similarly relative to PC1 they also behave similarly relative to each other and are positively correlated. Genes with different signs therefore are negatively correlated. 
+
+```{r loadings plot, dpi=300}
+
+{
+  range(pca.out$rotation[,"PC1"])
+  range(pca.out$rotation[,"PC2"])
+  
+  plot(x=pca.out$rotation[,"PC1"], y=pca.out$rotation[,"PC2"],
+       xlab="PC1", ylab="PC2", main="PC loading scores",
+       xlim=c(-0.5, 0.5), ylim=c(-1,1))
+  text(x=pca.out$rotation[,"PC1"], y=pca.out$rotation[,"PC2"], 
+       labels=rownames(pca.out$rotation), cex=0.5, pos=2)
+  abline(v=0, col="red", lty="dashed")
+}
+```
+## Use cases
+
+
+## Limitations and notes 
