@@ -27,6 +27,20 @@ output:
 }
 ```
 
+```{css, echo=FALSE}
+
+  .topalign img {
+    vertical-align: top;
+  }
+  
+  .center {
+    text-align: center;
+    width: 100%;
+  }
+
+}
+```
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, collapse = FALSE, class.source="code_format", class.output="output_format")
 ```
@@ -228,6 +242,15 @@ pc.var.perc
 
 Then, we visualise the percentages as a barplot using the **barplot()**. This plot is usually called a **scree plot**.
 
+<!-- By supplying the pcvar_perc vector in the barplot(), the y-axis shows the percentage  -->
+<!-- variation and the x-axis shows the principal component number. We use the argument  -->
+<!-- type=b to show both points and lines in the plot. The rest of the arguments specify  -->
+<!-- the main title, y-axis and x-axis labels, respectively. -->
+
+<!-- To use bar plots, we can use the barplot() function. The rest of the arguments -->
+<!-- specify the main title and y-axis labels. Often, scree plots are line plots and here  -->
+<!-- we could overlay it on the barplot using the lines() and points(). -->
+
 ```{r scree plot, dpi=300}
 
 #barplot(pc.var.perc, main="Scree plot", xlab="Principal Component", ylab="Percentage variation")
@@ -310,3 +333,183 @@ because genes with the same signs behave similarly relative to PC1 they also beh
 
 
 ## Limitations and notes 
+
+## Some useful code
+
+<!-- Using the str(), we can check the structure of the data and see that it has 6 gene features or variables observed from 12 cells.  -->
+
+<!-- - -->
+<!--   ```{r str dataset} -->
+
+<!--   str(data_df) -->
+
+<!--   ``` -->
+
+<!-- --- -->
+
+<!-- ### 1. Apply PCA to data -->
+
+<!-- #### <span style="font-weight:normal"> b. Check data </span> {.nobr} -->
+
+<!-- Before applying PCA, we need to ensure that our data is in the correct format.  -->
+<!-- prcomp() requires that columns represent features and we can confirm this by 
+displaying the first few rows of our data using head(). -->
+
+<!-- - -->
+<!--   ```{r head dataset} -->
+
+<!--   head(data_df) -->
+
+<!--   ``` -->
+  
+<!-- prcomp() also cannot handle missing values so here we check if there's any using the is.na(). -->
+<!-- Returning FALSE means that there's none, otherwise, we would need to  -->
+<!-- deal with the missing values before proceeding. -->
+
+<!-- - -->
+<!--   ```{r missing values} -->
+
+<!--   any(is.na(data_df)) -->
+
+<!--   ``` -->
+
+<!-- Finally, PCA only works for numeric or numeric representations of features so here -->
+<!-- we use sapply() to iterate over each feature column applying the is.numeric(). -->
+<!-- This returns a vector of booleans -->
+
+<!-- - -->
+<!--   ```{r numeric rows} -->
+
+<!--   is.feature.numeric <- sapply(X=data_df, FUN=is.numeric) -->
+<!--   is.feature.numeric -->
+
+<!--   ``` -->
+
+<!-- and we can use all() on that vector to confirm that all feature columns have numeric data -->
+
+<!-- - -->
+
+<!--   ```{r all numeric} -->
+
+<!--   all(is.feature.numeric) -->
+
+<!--   ``` -->
+
+<!-- #### <span style="font-weight:normal"> c. PCA using prcomp() </span> {.nobr} -->
+
+<!-- - -->
+<!--   ```{r data to pca plot, echo=FALSE, fig.align='center', out.width="1500pt"} -->
+
+<!--   library(cowplot) -->
+<!--   library(magick) -->
+
+<!--   ggdraw() +  -->
+<!--     draw_image("./data/tbl2.png", width = 0.35, valign = 0.8) +  -->
+<!--     draw_image("./data/pcaplot.png", width = 0.35, x = 0.5, valign = 0.8) -->
+
+<!--   ``` -->
+
+<!-- Here, we create a 2-D PCA scatter plot using the plot() function, where the x and y coordinates are given by PC1 and PC2 values from the pc_mx object. We use paste() to label the x and y axes with the component name and the percentage of variation explained by the component, respectively. The abline() function adds dashed lines to indicate the x=0 and y=0 axes. This is useful for interpreting the plot. -->
+
+<!-- -  -->
+<!--   ```{r pca code base, echo=TRUE, eval=FALSE} -->
+
+<!--   plot(x=pc_mx[,"PC1"],  -->
+<!--        y=pc_mx[,"PC2"], -->
+<!--        main="PCA plot", -->
+<!--        xlab=paste("PC1", pcvar_perc[["PC1"]], "%", sep=" "), -->
+<!--        ylab=paste("PC2", pcvar_perc[["PC2"]], "%", sep=" "), -->
+<!--        ) -->
+<!--    abline(v=0, lty="dashed", col="grey70") -->
+<!--    abline(h=0, lty="dashed", col="grey70") -->
+
+<!--   ``` -->
+
+<!--   ```{r pca plot base, echo=FALSE, fig.width=7, fig.height=5} -->
+
+<!--   plot(x=pc_mx[,"PC1"],  -->
+<!--        y=pc_mx[,"PC2"], -->
+<!--        main="PCA plot", -->
+<!--        xlab=paste("PC1", pcvar_perc[["PC1"]], "%", sep=" "), -->
+<!--        ylab=paste("PC2", pcvar_perc[["PC2"]], "%", sep=" "), -->
+<!--        xlim=c(-3,3.25) -->
+<!--        ) -->
+<!--    abline(v=0, lty="dashed", col="grey70") -->
+<!--    abline(h=0, lty="dashed", col="grey70") -->
+
+<!--   ``` -->
+
+<!-- Could add ggplot2 code to demonstrate -->
+<!-- how to easily colour clusters and/or use PCA to detect outliers with labeled data -->
+
+<!-- OR display loadings and explain clusters using that -->
+<!-- and just say that based on that decide for yourself how -->
+<!-- you can visualise -->
+
+<!-- ### 4. Examine contribution of original features to PCs with PC loading values -->
+
+<!-- ```{r loadings df} -->
+
+<!--   library(ggplot2) -->
+
+<!--   loadings.df <- as.data.frame(pcaOut_list$rotation) -->
+<!--   loadings.df$geneName <- rownames(loadings.df) -->
+
+<!--   head(loadings.df) -->
+
+<!-- ``` -->
+
+<!-- --- -->
+
+<!-- ### 4. Examine contribution of original features to PCs with PC loading values -->
+
+<!-- - -->
+<!--   ```{r loadings plot} -->
+
+<!--     ggplot(data=loadings.df, aes(x=PC1, y=PC2)) + -->
+<!--       geom_point(size=2.5, col="black") + -->
+<!--       geom_text(aes(label=geneName), vjust=1.5, hjust=0.5, col="black") + -->
+<!--       geom_hline(yintercept=0, lty="dashed") + -->
+<!--       geom_vline(xintercept=0, lty="dashed") + -->
+<!--       labs(title="PCA loadings plot", -->
+<!--            y=paste("PC2", pcvar_perc[["PC2"]], "%", sep=" "), -->
+<!--            x=paste("PC1", pcvar_perc[["PC1"]], "%", sep=" ")) + -->
+<!--       theme_classic() -->
+
+<!--   ``` -->
+
+<!-- --- -->
+
+<!-- ### 4. Examine contribution of original features to PCs with PC loading values -->
+
+<!-- - -->
+<!--   ```{r biplot base, echo=TRUE, eval=FALSE} -->
+<!--     biplot(pcaOut_list) -->
+<!--   ``` -->
+
+<!-- - -->
+<!--   ```{r biplot ggplot} -->
+
+<!--     library(factoextra) -->
+
+<!--     fviz_pca_biplot(pcaOut_list, col.var = "black",) + -->
+<!--       labs(title="PCA biplot", -->
+<!--            y=paste("PC2", pcvar_perc[["PC2"]], "%", sep=" "), -->
+<!--            x=paste("PC1", pcvar_perc[["PC1"]], "%", sep=" ")) + -->
+<!--       theme_classic() -->
+
+<!--   ``` -->
+
+<!-- --- -->
+
+<!-- ## IV. Points to remember -->
+
+<!-- - Preprocessing of data -->
+<!-- - Applicability of PCA to data -->
+<!-- - Applications of PCA -->
+<!--   - Trends -->
+<!--   - Clusters -->
+<!--   - Outliers -->
+<!-- - Limitations of PCA -->
+<!--   - PCs are linear combinations of original features -->
+<!-- - Using extra packages -->
